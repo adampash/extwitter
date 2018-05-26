@@ -8,8 +8,9 @@ defmodule ExTwitter.Parser do
   """
   def parse_tweet(object) do
     tweet = struct(ExTwitter.Model.Tweet, object)
-    user  = parse_user(tweet.user)
-    %{tweet | user: user}
+    user = parse_user(tweet.user)
+    entities = parse_entities(tweet.entities)
+    %{tweet | user: user, entities: entities}
   end
 
   @doc """
@@ -17,15 +18,14 @@ defmodule ExTwitter.Parser do
   """
   def parse_direct_message(object) do
     direct_message = struct(ExTwitter.Model.DirectMessage, object)
-    recipient      = parse_user(direct_message.recipient)
-    sender         = parse_user(direct_message.sender)
+    recipient = parse_user(direct_message.recipient)
+    sender = parse_user(direct_message.sender)
     %{direct_message | recipient: recipient, sender: sender}
   end
 
   def parse_upload(object) do
     struct(ExTwitter.Model.Upload, object)
   end
-
 
   @doc """
   Parse user record from the API response json.
@@ -35,11 +35,18 @@ defmodule ExTwitter.Parser do
   end
 
   @doc """
+  Parse entities from the API response json.
+  """
+  def parse_entities(object) do
+    struct(ExTwitter.Model.Entities, object)
+  end
+
+  @doc """
   Parse trend record from the API response json.
   """
   def parse_trend(object) do
     trend = struct(ExTwitter.Model.Trend, object)
-    %{trend | query: (trend.query |> URI.decode)}
+    %{trend | query: trend.query |> URI.decode()}
   end
 
   @doc """
@@ -55,7 +62,7 @@ defmodule ExTwitter.Parser do
   Parse trend record from the API response json.
   """
   def parse_ids(object) do
-    Enum.find(object, fn({key, _value}) -> key == :ids end) |> elem(1)
+    Enum.find(object, fn {key, _value} -> key == :ids end) |> elem(1)
   end
 
   @doc """
@@ -71,8 +78,11 @@ defmodule ExTwitter.Parser do
   Parse cursored users.
   """
   def parse_users_with_cursor(object) do
-    users = object |> ExTwitter.JSON.get(:users)
-                   |> Enum.map(&ExTwitter.Parser.parse_user/1)
+    users =
+      object
+      |> ExTwitter.JSON.get(:users)
+      |> Enum.map(&ExTwitter.Parser.parse_user/1)
+
     cursor = struct(ExTwitter.Model.Cursor, object)
     %{cursor | items: users}
   end
@@ -98,7 +108,7 @@ defmodule ExTwitter.Parser do
   """
   def parse_geo(object) do
     case object do
-      nil    -> nil
+      nil -> nil
       object -> struct(ExTwitter.Model.Geo, object)
     end
   end
@@ -121,7 +131,7 @@ defmodule ExTwitter.Parser do
   Parse batch user/lookup request parameters for the API.
   """
   def parse_batch_user_lookup_params(options) do
-    Enum.map(options, fn({k,v}) ->
+    Enum.map(options, fn {k, v} ->
       if is_list(v) do
         {to_string(k), Enum.join(v, ",")}
       else
