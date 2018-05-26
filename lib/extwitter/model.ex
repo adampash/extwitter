@@ -81,7 +81,7 @@ defmodule ExTwitter.Model.Entities do
   https://dev.twitter.com/overview/api/entities
   """
   defstruct hashtags: nil, media: nil, symbols: nil, urls: nil,
-    user_mentions: nil
+    user_mentions: nil, polls: nil
 
   @type t :: %__MODULE__{}
 end
